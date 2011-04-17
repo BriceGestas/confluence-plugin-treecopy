@@ -1,0 +1,29 @@
+<atlassian-plugin key="${project.groupId}.${project.artifactId}" name="${project.name}" plugins-version="2">
+
+    <plugin-info>
+        <description>${project.description}</description>
+        <version>${project.version}</version>
+        <vendor name="${project.organization.name}" url="${project.organization.url}" />
+    </plugin-info>
+
+	<web-item name="treecopy-action-web-ui" key="treecopy-action-web-ui" section="system.content.action/modify" weight="10">
+		<description key="item.treecopy-action-web-ui.link.desc">Copies the page including all descendants.</description>
+		<label key="Copy Page Tree"/>
+		<link linkId="treecopy-action">/plugins/treecopy/setnames.action?pageId=$page.id</link>
+	</web-item>
+    
+	<xwork name="treecopy-action-xwork" key="treecopy-action-xwork">
+		<description key="item.treecopy-action-xwork.link.desc">Defines what the "treecopy" action does.</description>
+		<package name="treecopy" extends="default" namespace="/plugins/treecopy">
+			<default-interceptor-ref name="defaultStack"/>
+			<action name="setnames" class="com.imaginarymachines.confluence.plugins.TreecopyAction" method="executeSetnames">
+				<result name="setnames" type="velocity">/templates/setnames.vm</result>
+			</action>
+			<action name="copy" class="com.imaginarymachines.confluence.plugins.TreecopyAction" method="executeCopy">
+				<!--  <result name="success" type="redirect">/confluence/pages/listpages-dirview.action?key=${space.key}</result>  -->
+				<result name="success" type="redirect">${page.urlPath}</result>
+			</action>
+		</package>
+	</xwork>
+
+</atlassian-plugin>

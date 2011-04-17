@@ -1,0 +1,75 @@
+<html> 
+<head> 
+	<meta name="decorator" content="atl.general"/>
+    <title>Copy Page Tree</title>	 	
+</head> 
+<body> 
+    
+    <script type="text/javascript">
+    	    
+	    function addsubstitute() {
+		    var titlefields = document.getElementsByTagName("input");
+			
+	    	for (var i=0;i<titlefields.length;i=i+1) {
+	    		if (titlefields[i].name.search("^title-")!=-1) {
+	    			titlefields[i].value = document.getElementById("prefix").value + titlefields[i].value;
+	    		}    		
+	    	}
+
+	    	for (var i=0;i<titlefields.length;i=i+1) {
+	    		if (titlefields[i].name.search("^title-")!=-1) {
+	    			titlefields[i].value = titlefields[i].value + document.getElementById("suffix").value;
+	    		}    		
+	    	}
+
+		    for (var i=0;i<titlefields.length;i=i+1) {
+		    	if (titlefields[i].name.search("^title-")!=-1) {
+		    		var re = new RegExp(document.getElementById("search").value,"g");
+		    		titlefields[i].value  = titlefields[i].value.replace(re, document.getElementById("replace").value); 
+		    		
+		    	}    		
+		    }
+		}
+    
+    </script>
+    
+	<img src="" width="20" height="1">
+	<table style="spacing:3px;background-color:#DDDDDD;">
+		<tr>
+			<td><img src="" width="40" height="1"></td>
+			<td style="border-bottom:1px solid black;">Prefix</td>
+			<td><img src="" width="40" height="1"></td>
+			<td style="border-bottom:1px solid black;">Replace</td>
+			<td><img src="" width="40" height="1"></td>
+			<td style="border-bottom:1px solid black;">Suffix</td>
+			<td><img src="" width="40" height="1"></td>
+			<td><img src="" width="40" height="1"></td>
+		</tr>
+		<tr>
+			<td></td>
+			<td><input type="text" id="prefix" style="width:60px"></td>
+			<td></td>
+			<td><input type="text" id="search" style="width:60px"> -&gt; <input type="text" id="replace" style="width:60px"></td>
+			<td></td>
+			<td><input type="text" id="suffix" style="width:60px"></td>
+			<td></td>
+			<td><input type="button" value="Apply" onClick="addsubstitute();"></td>
+		</tr>
+	</table>	
+	<br>
+	<br>
+	<form action="copy.action?pageId=$page.id" method="post">
+	#foreach( $desc in $action.getDescendants() )
+		#set( $width = $desc.getDepth()*20 )
+		#set( $inputwidth = 500 - $width )
+		<img src="" width="$width" height="1">
+		<input type="checkbox" name="toggle-$desc.getId()" value="$desc.getId()" /> 
+		<input style="width:${inputwidth}px" type="text" name="title-$desc.getId()" value="$desc.getTitle()" /> 
+		<br>
+	#end
+	<br>
+	<input type="hidden" name="pageId" value="$pageId" />
+	<input type="submit" value="Copy">
+	</form>
+</body> 
+</html> 
