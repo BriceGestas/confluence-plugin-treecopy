@@ -7,7 +7,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.imaginarymachines.confluence.plugins</groupId>
     <artifactId>treecopy</artifactId>
-    <version>0.21.0-SNAPSHOT</version>
+    <version>0.23.0-SNAPSHOT</version>
 
     <organization>
         <name>Imaginary Machines</name>
@@ -82,8 +82,8 @@
     </build>
 
     <properties>
-        <confluence.version>3.5</confluence.version>
-        <confluence.data.version>3.5</confluence.data.version>
+    	<confluence.version>4.0</confluence.version>
+    	<confluence.data.version>3.5</confluence.data.version>
     </properties>
 
 </project>

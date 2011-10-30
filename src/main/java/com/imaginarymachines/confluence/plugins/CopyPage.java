@@ -96,7 +96,8 @@ public class CopyPage implements Comparable {
 		final Page newPage = new Page();
         newPage.setTitle(this.getNewtitle());
         newPage.setSpace(space);
-        newPage.setContent(oldPage.getContent());
+        //newPage.setContent(oldPage.getContent());
+        newPage.setBodyAsString(oldPage.getBodyAsString());
         newPage.setPosition(oldPage.getPosition());
         pageManager.saveContentEntity(newPage, null);
         if (parentPage!=null) parentPage.addChild(newPage);
