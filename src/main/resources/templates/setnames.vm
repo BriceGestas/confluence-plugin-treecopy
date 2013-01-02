@@ -4,7 +4,10 @@
     <title>Copy Page Tree</title>	 	
 </head> 
 <body> 
-    
+	#set( $staticResourcePrefix = $action.getStaticResourcePrefix() )
+    <script src="$staticResourcePrefix/download/resources/com.nurago.confluence.plugins.treecopy/js/jquery.auto-complete.js" type="text/javascript"></script>
+    <link type="text/css" rel="stylesheet" href="$staticResourcePrefix/download/resources/com.nurago.confluence.plugins.treecopy/css/jquery.auto-complete.css" media="all"></link>
+
     <script type="text/javascript">
     	    
 	    function addsubstitute() {
@@ -12,31 +15,58 @@
 			
 	    	for (var i=0;i<titlefields.length;i=i+1) {
 	    		if (titlefields[i].name.search("^title-")!=-1) {
-	    			titlefields[i].value = document.getElementById("prefix").value + titlefields[i].value;
+	    			var id = titlefields[i].name.split("-")[1];
+	    			if (document.getElementById("toggle-"+id).checked) {
+	    				titlefields[i].value = document.getElementById("prefix").value + titlefields[i].value;
+	    			}
 	    		}    		
 	    	}
 
 	    	for (var i=0;i<titlefields.length;i=i+1) {
 	    		if (titlefields[i].name.search("^title-")!=-1) {
-	    			titlefields[i].value = titlefields[i].value + document.getElementById("suffix").value;
+	    			var id = titlefields[i].name.split("-")[1];
+	    			if (document.getElementById("toggle-"+id).checked) {
+	    				titlefields[i].value = titlefields[i].value + document.getElementById("suffix").value;
+	    			}
 	    		}    		
 	    	}
 
 		    for (var i=0;i<titlefields.length;i=i+1) {
 		    	if (titlefields[i].name.search("^title-")!=-1) {
 		    		var re = new RegExp(document.getElementById("search").value,"g");
-		    		titlefields[i].value  = titlefields[i].value.replace(re, document.getElementById("replace").value); 
-		    		
+		    		var id = titlefields[i].name.split("-")[1];
+	    			if (document.getElementById("toggle-"+id).checked) {
+		    			titlefields[i].value  = titlefields[i].value.replace(re, document.getElementById("replace").value); 
+		    		}
 		    	}    		
 		    }
 		}
     
+    	function selectall() {
+    		var togglefields = document.getElementsByTagName("input");
+			
+	    	for (var i=0;i<togglefields.length;i=i+1) {
+	    		if (togglefields[i].name.search("^toggle-")!=-1) {
+	    			togglefields[i].checked = true;
+	    		}    		
+	    	}
+    	}
+    
+    	function deselectall() {
+    		var togglefields = document.getElementsByTagName("input");
+			
+	    	for (var i=0;i<togglefields.length;i=i+1) {
+	    		if (togglefields[i].name.search("^toggle-")!=-1) {
+	    			togglefields[i].checked = false;
+	    		}    		
+	    	}
+    	}
     </script>
     
 	<img src="" width="20" height="1">
-	<table style="spacing:3px;background-color:#DDDDDD;">
+	<table style="spacing:3px;background-color:#DDDDDD;width:500px">
 		<tr>
-			<td><img src="" width="40" height="1"></td>
+			<td><img src="" width="33" height="1"></td>
 			<td style="border-bottom:1px solid black;">Prefix</td>
 			<td><img src="" width="40" height="1"></td>
 			<td style="border-bottom:1px solid black;">Replace</td>
@@ -58,18 +88,69 @@
 	</table>	
 	<br>
 	<br>
+	<span style="font-size:small">
+		<a href="javascript:selectall()">Select All</a> /  <a href="javascript:deselectall()">Deselect All</a>
+	</span>
 	<form action="copy.action?pageId=$page.id" method="post">
 	#foreach( $desc in $action.getDescendants() )
 		#set( $width = $desc.getDepth()*20 )
 		#set( $inputwidth = 500 - $width )
 		<img src="" width="$width" height="1">
-		<input type="checkbox" name="toggle-$desc.getId()" value="$desc.getId()" /> 
+		<input type="checkbox" name="toggle-$desc.getId()" id="toggle-$desc.getId()" value="$desc.getId()" /> 
 		<input style="width:${inputwidth}px" type="text" name="title-$desc.getId()" value="$desc.getTitle()" /> 
 		<br>
 	#end
 	<br>
+	<br>
+	<table style="spacing:3px;background-color:#DDDDDD;width:500px">
+		<tr>
+			<td style="border-bottom:1px solid black;">Space</td>
+			<td style="border-bottom:1px solid black;">Parent Page</td>
+			<td><img src="" width="40" height="1"></td>
+		</tr>
+		<tr>
+			<td>
+				<select name="targetspace" id="targetspace" size="1" style="width:150px">
+					#foreach( $space in $action.getSpaces() )
+						#if ($action.getCurrPage().getSpace().getName() == $space.getName())
+							#set($selected = "selected")
+						#else
+							#set($selected = "")
+						#end
+						<option ${selected} value="$space.getKey()">$space.getName()</option>
+					#end
+			    </select>
+			</td>
+			<td>
+				#if (! $action.getCurrPage().getParent())
+					#set($parent = "")
+				#else
+					#set($parent = $action.getCurrPage().getParent().getTitle())
+				#end
+				<input id="parenttitle" name="parenttitle" style="width:250px" value="$parent"/>
+			</td>
+			<td>
+				<input type="submit" value="Copy">
+			</td>
+		</tr>
+	</table>
+	<br>
 	<input type="hidden" name="pageId" value="$pageId" />
-	<input type="submit" value="Copy">
+	
 	</form>
+	<script>
+		jQuery(document).ready(function() {
+			
+			jQuery("#parenttitle").autoComplete({ajax: '/confluence/plugins/servlet/treecopypages?action=getpages&spacekey='+jQuery("#targetspace").val()});
+			
+			jQuery("#targetspace").change(function() {
+				jQuery("input#parenttitle").autoComplete({ajax: '/confluence/plugins/servlet/treecopypages?action=getpages&spacekey='+jQuery("#targetspace").val()});
+			});
+			
+			selectall();
+		});
+		
+
+	</script>
 </body> 
 </html> 

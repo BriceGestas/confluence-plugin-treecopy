@@ -103,7 +103,7 @@ public class CopyPage implements Comparable {
         if (parentPage!=null) parentPage.addChild(newPage);
         this.setNewid(newPage.getId());
         
-        
+        //TODO: Attachments are not copied to other spaces?
         List<Attachment> oldAttachments = oldPage.getAttachments();
         for (Attachment oldAttachment : oldAttachments) {
         	try {

@@ -6,6 +6,9 @@
         <vendor name="${project.organization.name}" url="${project.organization.url}" />
     </plugin-info>
 
+	<resource type="download" name="js/" location="js"/>
+	<resource type="download" name="css/" location="css"/>
+
 	<web-item name="treecopy-action-web-ui" key="treecopy-action-web-ui" section="system.content.action/modify" weight="10">
 		<description key="item.treecopy-action-web-ui.link.desc">Copies the page including all descendants.</description>
 		<label key="Copy Page Tree"/>
@@ -25,5 +28,11 @@
 			</action>
 		</package>
 	</xwork>
+
+	<servlet name="Treecopy Servlet" key="treecopypages" class="com.imaginarymachines.confluence.plugins.PagesServlet">
+		<description>Endpoint for XHR Calls from the Treecopy Action.</description>
+		<url-pattern>/treecopypages</url-pattern>
+	</servlet>
+
 
 </atlassian-plugin>

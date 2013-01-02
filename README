@@ -1,0 +1,24 @@
+
+
+Atlassian Confluence Plugin that adds a page action to copy not only the current page but a complete page hierarchy. The Plugin supports adjustments of page names to avoid problems with page name duplication. Copies can be saved to other Spaces as well.
+
+RELEASE 0.30.0:
+
+Improvements:
+
+* Added a feature to choose what space the copies will be saved in
+* Added a feature to choose the parent page the copies will be saved under taking into account the specified space. There is an autocomplete feature with that field to ease the selection of a valid page title.
+* All pages are selected by default now
+* Added "(De-)Select All" links.
+* Applying Prefixes/Suffixes or Replacements to the Page Titles now work for selected pages only.
+
+Bugfixes:
+* Space Permissions are taken into account now. It's not possible anymore to copy pages into a space where the user is not allowed to create pages. (see https://answers.atlassian.com/questions/64948/copy-page-tree-macro-doesn-t-respect-permissions).
+
+Known Issues:
+* Apparently attachments are not copied to other spaces (see https://jira.atlassian.com/browse/CONF-24678 for a similar issue).
+* The autocomplete Feature used in the Parent Page field doesn't allow selections by mouse click at least in Google Chrome. Unfortunately the standard jQuery UI autocomplete cannot be used here because Atlassian tweaked that feature a little bit too much (see https://answers.atlassian.com/questions/3304/success-using-jquery-ui-autocomplete-in-confluence-3-5-3). The substitute I used is causing the issue.
+* Missing Space Permissions Check when executing the copy. An attacker could fiddle with the HTTP POST request to inject different space key.
+* Errors (unknown pages or page title collisions) are still not handled gracefully.
+* Overall Look and Feel is not that great
+* Not tested with Confluence Versions other than 4.3 yet

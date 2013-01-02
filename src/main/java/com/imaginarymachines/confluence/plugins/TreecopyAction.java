@@ -13,8 +13,26 @@ import com.atlassian.confluence.pages.Page;
 import com.atlassian.confluence.pages.PageManager;
 import com.atlassian.confluence.pages.actions.PageAware;
 import com.atlassian.confluence.spaces.SpaceManager;
+import com.atlassian.confluence.spaces.Space;
+import com.atlassian.confluence.spaces.SpaceType;
+import com.atlassian.confluence.spaces.SpacesQuery;
 import com.opensymphony.webwork.ServletActionContext;
- 
+import com.atlassian.confluence.user.AuthenticatedUserThreadLocal;
+import com.atlassian.user.User;
+import com.atlassian.confluence.security.Permission;
+import com.atlassian.plugin.webresource.WebResourceManager;
+import com.atlassian.plugin.webresource.WebResourceUrlProvider;
+import com.atlassian.spring.container.ContainerManager;
+import com.atlassian.plugin.webresource.UrlMode;
+import com.atlassian.confluence.util.velocity.VelocityUtils;
+import com.atlassian.confluence.renderer.PageContext;
+import com.atlassian.confluence.renderer.radeox.macros.MacroUtils;
+
+import java.util.List;
+import java.util.Map;
+import java.util.ArrayList;
+import java.util.Iterator;
+
 /**
 * This Confluence action allows to copy a page including 
 */
@@ -27,21 +45,41 @@ public class TreecopyAction extends ConfluenceActionSupport implements PageAware
 	private AbstractPage page;
 	private Page currPage;
 	private ArrayList<CopyPage> descendants;
-	
+	private ArrayList<Space> spaces;
+	private String staticResourcePrefix;
+
 	public String executeSetnames() {
 		
 		currPage = (Page) this.getWebInterfaceContext().getPage();
 		
-		//System.out.println("CURRENT PAGE: "+currPage.getTitle());
 		CopyPage currCopy = createCopyPage(currPage,0);
 		
+		String baseURL = settingsManager.getGlobalSettings().getBaseUrl();
+
 		descendants = new ArrayList<CopyPage>();
 		currCopy.readChildHierarchy(descendants);
 		
 		for (int i=0; i<descendants.size(); i++) {
 			CopyPage cp = descendants.get(i);
-		}
+		};
 		
+		spaces = new ArrayList<Space>();
+
+		//System.out.println("FIND Spaces with Permission "+Permission.EDIT+" for User "+AuthenticatedUserThreadLocal.getUser());
+		//SpacesQuery query = SpacesQuery.newQuery().forUser(AuthenticatedUserThreadLocal.getUser()).withPermission("EDIT").build();
+		//List<Space> allspaces = spaceManager.getAllSpaces(query);
+
+		List<Space> allspaces = spaceManager.getSpacesEditableByUser(AuthenticatedUserThreadLocal.getUser());
+
+		Iterator<Space> itr = allspaces.iterator();
+		while (itr.hasNext()) {
+			Space space = itr.next();
+			spaces.add(space);
+		};
+		
+		WebResourceUrlProvider webResourceUrlProvider = (WebResourceUrlProvider)ContainerManager.getComponent("webResourceUrlProvider");
+		staticResourcePrefix = webResourceUrlProvider.getStaticResourcePrefix(UrlMode.ABSOLUTE);
+
 		return "setnames";
 	}
 	
@@ -71,7 +109,11 @@ public class TreecopyAction extends ConfluenceActionSupport implements PageAware
 			}
 		}
 		
-		currCopy.storeCopyPages(currPage.getSpace(), pageManager, attachmentManager, labelManager, currPage.getParent());
+		Space space = spaceManager.getSpace(r.getParameter("targetspace"));
+		Page parentpage = pageManager.getPage(r.getParameter("targetspace"), r.getParameter("parenttitle"));
+		
+		System.out.println("SAVE under \""+parentpage.getTitle()+"\" in \""+space.getDisplayTitle()+"\"");
+		currCopy.storeCopyPages(space, pageManager, attachmentManager, labelManager, parentpage);
 		        
 		return "success";
 	}
@@ -92,7 +134,10 @@ public class TreecopyAction extends ConfluenceActionSupport implements PageAware
 		return copypage;
 	}
 	
-	
+	public ArrayList<Space> getSpaces() {
+		return spaces;
+	}
+
 	public Page getCurrPage() {
 		return currPage;
 	}
@@ -159,5 +204,10 @@ public class TreecopyAction extends ConfluenceActionSupport implements PageAware
     
     public void setAttachmentManager(AttachmentManager attachmentManager) {
         this.attachmentManager = attachmentManager;
+    }
+
+    public String getStaticResourcePrefix() {
+    	System.out.println("staticResourcePrefix: "+this.staticResourcePrefix);
+    	return this.staticResourcePrefix;
     }
 }
