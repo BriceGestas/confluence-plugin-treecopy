@@ -2,6 +2,16 @@
 
 Atlassian Confluence Plugin that adds a page action to copy not only the current page but a complete page hierarchy. The Plugin supports adjustments of page names to avoid problems with page name duplication. Copies can be saved to other Spaces as well.
 
+RELEASE 0.31.0:
+
+Improvements:
+* Tested Compatibility from 4.0 to 4.3 
+
+Bugfixes:
+* Space Permissions are checked now when executing the Copy, so loopholing the check by fiddling with the HTTP POST is not possible anymore.
+* Copying attachment to other spaces is actually possible. That was a false alarm.
+
+
 RELEASE 0.30.0:
 
 Improvements:

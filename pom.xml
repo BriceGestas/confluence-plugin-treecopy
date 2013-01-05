@@ -5,9 +5,9 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
 
     <modelVersion>4.0.0</modelVersion>
-    <groupId>com.imaginarymachines.confluence.plugins</groupId>
+    <groupId>com.nurago.confluence.plugins</groupId>
     <artifactId>treecopy</artifactId>
-    <version>0.25.0-RELEASE</version>
+    <version>0.31.0</version>
 
     <organization>
         <name>Imaginary Machines</name>
