@@ -112,8 +112,13 @@ public class TreecopyAction extends ConfluenceActionSupport implements PageAware
 		Space space = spaceManager.getSpace(r.getParameter("targetspace"));
 		Page parentpage = pageManager.getPage(r.getParameter("targetspace"), r.getParameter("parenttitle"));
 		
-		System.out.println("SAVE under \""+parentpage.getTitle()+"\" in \""+space.getDisplayTitle()+"\"");
-		currCopy.storeCopyPages(space, pageManager, attachmentManager, labelManager, parentpage);
+		List<Space> allspaces = spaceManager.getSpacesEditableByUser(AuthenticatedUserThreadLocal.getUser());
+		if (allspaces.contains(space)) {
+			System.out.println("SAVE under \""+parentpage.getTitle()+"\" in \""+space.getDisplayTitle()+"\"");
+			currCopy.storeCopyPages(space, pageManager, attachmentManager, labelManager, parentpage);			
+		} else {
+			System.out.println("NOT SAVED under \""+parentpage.getTitle()+"\" due to insufficient permissions in Space " + space.getKey());
+		}
 		        
 		return "success";
 	}

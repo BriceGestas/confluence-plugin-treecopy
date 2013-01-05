@@ -20,7 +20,7 @@ import com.atlassian.confluence.spaces.Space;
 import com.atlassian.confluence.spaces.SpaceType;
 import com.atlassian.confluence.spaces.SpacesQuery;
 import com.atlassian.user.User;
-import com.google.gson.Gson;
+import com.imaginarymachines.com.google.gson.Gson;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
@@ -61,34 +61,22 @@ public class PagesServlet extends HttpServlet {
             User user = AuthenticatedUserThreadLocal.getUser();
             String spacekey = request.getParameter("spacekey");
         	String term = request.getParameter("value");
-
-            //SpacesQuery query = SpacesQuery.newQuery().withSpaceKey(spacekey).forUser(user).withPermission("EDIT").build();
-            //SpacesQuery query = SpacesQuery.newQuery().withSpaceKey(spacekey).forUser(user).build();
-            //List<Space> allspaces = spaceManager.getAllSpaces(query);
-            //System.out.println("found "+allspaces.size()+" spaces"); 
-            //Space space = allspaces.get(0);
-
-            List<Space> allspaces = spaceManager.getSpacesEditableByUser(AuthenticatedUserThreadLocal.getUser());
             
+            List<Space> allspaces = spaceManager.getSpacesEditableByUser(AuthenticatedUserThreadLocal.getUser());
+            Space space = spaceManager.getSpace(spacekey);
+
             ArrayList<HashMap<String, String>> pagemap = new ArrayList<HashMap<String, String>>();
             
             if (term!=null && !term.equals("")) {
-                Iterator<Space> itr = allspaces.iterator();
-                    while (itr.hasNext()) {
-                    Space space = itr.next();
-                    if (space.getKey().equals(spacekey)) {
-                        //ListBuilder<Page> pages = pageManager.getTopLevelPagesBuilder(space);
-                        //List<Page> pages = pageManager.getTopLevelPages(space);
-                        List<Page> pages = pageManager.getPagesStartingWith(space, term);
-                        Iterator<Page> itr2 = pages.iterator();
-                        while (itr2.hasNext()) {
-                            Page page = itr2.next();
-                            if(permissionManager.hasPermission(user, Permission.VIEW, page)) {
-                                HashMap<String, String> entry = new HashMap<String, String>();
-                                entry.put("value", page.getTitle());
-                                pagemap.add(entry);                
-                            }
-
+                if (allspaces.contains(space)) {
+                    List<Page> pages = pageManager.getPagesStartingWith(space, term);
+                    Iterator<Page> itr2 = pages.iterator();
+                    while (itr2.hasNext()) {
+                        Page page = itr2.next();
+                        if(permissionManager.hasPermission(user, Permission.VIEW, page)) {
+                            HashMap<String, String> entry = new HashMap<String, String>();
+                            entry.put("value", page.getTitle());
+                            pagemap.add(entry);                
                         }
                     }
                 }

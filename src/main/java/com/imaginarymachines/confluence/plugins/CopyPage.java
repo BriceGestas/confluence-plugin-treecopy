@@ -90,8 +90,10 @@ public class CopyPage implements Comparable {
 		
 		Page parentPage = defaultParentPage;
 		
-		if (this.getParent()!=null) parentPage = pageManager.getPage(this.getParent().getNewid());
-		
+		if (this.getParent()!=null) {
+			parentPage = pageManager.getPage(this.getParent().getNewid());
+		}
+		//System.out.println("parentPage "+parentPage.getTitle());
 		
 		final Page newPage = new Page();
         newPage.setTitle(this.getNewtitle());
@@ -100,13 +102,17 @@ public class CopyPage implements Comparable {
         newPage.setBodyAsString(oldPage.getBodyAsString());
         newPage.setPosition(oldPage.getPosition());
         pageManager.saveContentEntity(newPage, null);
-        if (parentPage!=null) parentPage.addChild(newPage);
+        if (parentPage!=null) {
+        	parentPage.addChild(newPage);
+        } else {
+        	System.out.println("no parentPage!");
+        }
         this.setNewid(newPage.getId());
         
-        //TODO: Attachments are not copied to other spaces?
         List<Attachment> oldAttachments = oldPage.getAttachments();
         for (Attachment oldAttachment : oldAttachments) {
         	try {
+        		System.out.println("oldAttachment="+oldAttachment.getFileName());
         		Attachment newAttachment = new Attachment();
         		newAttachment.setContentType(oldAttachment.getContentType());
         		newAttachment.setFileName(oldAttachment.getFileName());
@@ -114,6 +120,7 @@ public class CopyPage implements Comparable {
         		newAttachment.setFileSize(oldAttachment.getFileSize());
 	            newPage.addAttachment(newAttachment);
         		attachmentManager.saveAttachment(newAttachment, null, oldAttachment.getContentsAsStream());
+        		System.out.println("newAttachment="+newAttachment.getFileName());
             } catch (Exception exception) {
             	exception.printStackTrace();
             }
