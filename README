@@ -2,6 +2,8 @@
 
 Atlassian Confluence Plugin that adds a page action to copy not only the current page but a complete page hierarchy. The Plugin supports adjustments of page names to avoid problems with page name duplication. Copies can be saved to other Spaces as well.
 
+To install this plugin, go to https://marketplace.atlassian.com/plugins/com.nurago.confluence.plugins.treecopy
+
 RELEASE 0.31.0:
 
 Improvements:
