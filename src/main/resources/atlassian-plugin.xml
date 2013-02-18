@@ -8,6 +8,12 @@
 
 	<resource type="download" name="js/" location="js"/>
 	<resource type="download" name="css/" location="css"/>
+	
+	<web-resource key="web-resources">
+	    <resource type="download" name="jquery.auto-complete.css" location="css/jquery.auto-complete.css"/>
+	    <resource type="download" name="jquery.auto-complete.js" location="js/jquery.auto-complete.js"/>
+
+	</web-resource>
 
 	<web-item name="treecopy-action-web-ui" key="treecopy-action-web-ui" section="system.content.action/modify" weight="10">
 		<description key="item.treecopy-action-web-ui.link.desc">Copies the page including all descendants.</description>
@@ -25,6 +31,8 @@
 			<action name="copy" class="com.imaginarymachines.confluence.plugins.TreecopyAction" method="executeCopy">
 				<!--  <result name="success" type="redirect">/confluence/pages/listpages-dirview.action?key=${space.key}</result>  -->
 				<result name="success" type="redirect">${page.urlPath}</result>
+				<result name="setnames" type="velocity">/templates/setnames.vm</result>
+				
 			</action>
 		</package>
 	</xwork>
@@ -33,6 +41,7 @@
 		<description>Endpoint for XHR Calls from the Treecopy Action.</description>
 		<url-pattern>/treecopypages</url-pattern>
 	</servlet>
-
+	
+	<resource type="i18n" name="i18n" location="i18n" />
 
 </atlassian-plugin>

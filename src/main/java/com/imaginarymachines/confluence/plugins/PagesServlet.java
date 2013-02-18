@@ -1,24 +1,13 @@
 package com.imaginarymachines.confluence.plugins;
 
-import com.atlassian.confluence.core.DefaultSaveContext;
-import com.atlassian.confluence.pages.Attachment;
-import com.atlassian.confluence.pages.AttachmentManager;
 import com.atlassian.confluence.security.PermissionManager;
 import com.atlassian.confluence.security.Permission;
 import com.atlassian.confluence.pages.Page;
 import com.atlassian.confluence.pages.PageManager;
-import com.atlassian.confluence.renderer.radeox.macros.MacroUtils;
-import com.atlassian.confluence.setup.settings.SettingsManager;
-import com.atlassian.confluence.util.velocity.VelocityUtils;
 import com.atlassian.confluence.user.AuthenticatedUserThreadLocal;
-import com.atlassian.plugin.webresource.WebResourceManager;
-import com.atlassian.plugin.webresource.WebResourceUrlProvider;
-import com.atlassian.plugin.webresource.UrlMode;
 import com.atlassian.spring.container.ContainerManager;
 import com.atlassian.confluence.spaces.SpaceManager;
 import com.atlassian.confluence.spaces.Space;
-import com.atlassian.confluence.spaces.SpaceType;
-import com.atlassian.confluence.spaces.SpacesQuery;
 import com.atlassian.user.User;
 import com.imaginarymachines.com.google.gson.Gson;
 
@@ -27,33 +16,23 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import java.io.BufferedInputStream;
-import java.io.BufferedOutputStream;
-import java.io.BufferedReader;
-import java.io.ByteArrayOutputStream;
-import java.io.FileInputStream;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.ObjectInputStream;
-import java.io.StringBufferInputStream;
 import java.util.HashMap;
-import java.util.Map;
-import java.util.Date;
 import java.util.List;
 import java.util.ArrayList;
-import java.util.Iterator;
+import java.util.Map;
 
 
 public class PagesServlet extends HttpServlet {
-	
+
+	private static final long serialVersionUID = -1227774810957633829L;
+
 	protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
 		
 		String actionName = request.getParameter("action");
 		
 		if (actionName!=null && actionName.equals("getpages")) {
 		            
-			WebResourceManager webResourceManager = (WebResourceManager)ContainerManager.getComponent("webResourceManager");
         	PageManager pageManager = (PageManager)ContainerManager.getComponent("pageManager");
             SpaceManager spaceManager = (SpaceManager)ContainerManager.getComponent("spaceManager");
             PermissionManager permissionManager = (PermissionManager)ContainerManager.getComponent("permissionManager");
@@ -62,25 +41,20 @@ public class PagesServlet extends HttpServlet {
             String spacekey = request.getParameter("spacekey");
         	String term = request.getParameter("value");
             
-            List<Space> allspaces = spaceManager.getSpacesEditableByUser(AuthenticatedUserThreadLocal.getUser());
             Space space = spaceManager.getSpace(spacekey);
 
-            ArrayList<HashMap<String, String>> pagemap = new ArrayList<HashMap<String, String>>();
+            List<Map<String, String>> pagemap = new ArrayList<Map<String, String>>();
             
-            if (term!=null && !term.equals("")) {
-                if (allspaces.contains(space)) {
-                    List<Page> pages = pageManager.getPagesStartingWith(space, term);
-                    Iterator<Page> itr2 = pages.iterator();
-                    while (itr2.hasNext()) {
-                        Page page = itr2.next();
-                        if(permissionManager.hasPermission(user, Permission.VIEW, page)) {
-                            HashMap<String, String> entry = new HashMap<String, String>();
-                            entry.put("value", page.getTitle());
-                            pagemap.add(entry);                
-                        }
-                    }
-                }
-            }
+            if ( term != null && !term.isEmpty() && space != null ) {
+            	List<Page> pages = pageManager.getPagesStartingWith(space, term);
+                for (Page page : pages) {
+                	if(permissionManager.hasPermission(user, Permission.VIEW, page)) {
+                		Map<String, String> entry = new HashMap<String, String>();
+                		entry.put("value", page.getTitle());
+                		pagemap.add(entry);
+                	}
+    			}
+			}
             
             Gson gson = new Gson();
             response.getWriter().write(gson.toJson(pagemap));

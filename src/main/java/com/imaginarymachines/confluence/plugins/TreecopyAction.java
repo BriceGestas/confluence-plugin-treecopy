@@ -1,42 +1,43 @@
 package com.imaginarymachines.confluence.plugins;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.Enumeration;
 
 import javax.servlet.http.HttpServletRequest;
 
+import org.apache.log4j.Logger;
+
 import com.atlassian.confluence.core.ConfluenceActionSupport;
+import com.atlassian.confluence.core.ListBuilder;
 import com.atlassian.confluence.labels.LabelManager;
 import com.atlassian.confluence.pages.AbstractPage;
+import com.atlassian.confluence.pages.Attachment;
 import com.atlassian.confluence.pages.AttachmentManager;
+import com.atlassian.confluence.pages.AttachmentUtils;
 import com.atlassian.confluence.pages.Page;
 import com.atlassian.confluence.pages.PageManager;
 import com.atlassian.confluence.pages.actions.PageAware;
 import com.atlassian.confluence.spaces.SpaceManager;
 import com.atlassian.confluence.spaces.Space;
-import com.atlassian.confluence.spaces.SpaceType;
 import com.atlassian.confluence.spaces.SpacesQuery;
 import com.opensymphony.webwork.ServletActionContext;
 import com.atlassian.confluence.user.AuthenticatedUserThreadLocal;
-import com.atlassian.user.User;
-import com.atlassian.confluence.security.Permission;
-import com.atlassian.plugin.webresource.WebResourceManager;
+import com.atlassian.confluence.security.SpacePermission;
 import com.atlassian.plugin.webresource.WebResourceUrlProvider;
 import com.atlassian.spring.container.ContainerManager;
+import com.atlassian.user.User;
 import com.atlassian.plugin.webresource.UrlMode;
-import com.atlassian.confluence.util.velocity.VelocityUtils;
-import com.atlassian.confluence.renderer.PageContext;
-import com.atlassian.confluence.renderer.radeox.macros.MacroUtils;
-
 import java.util.List;
-import java.util.Map;
-import java.util.ArrayList;
-import java.util.Iterator;
 
 /**
 * This Confluence action allows to copy a page including 
 */
 public class TreecopyAction extends ConfluenceActionSupport implements PageAware {
+
+	private static final long serialVersionUID = 7584904352458114888L;
+	
+    private static final Logger LOG = Logger.getLogger(TreecopyAction.class);
 
 	private SpaceManager spaceManager;
 	private PageManager pageManager;
@@ -44,8 +45,8 @@ public class TreecopyAction extends ConfluenceActionSupport implements PageAware
 	private LabelManager labelManager;
 	private AbstractPage page;
 	private Page currPage;
-	private ArrayList<CopyPage> descendants;
-	private ArrayList<Space> spaces;
+	private List<CopyPage> descendants;
+	private List<Space> spaces;
 	private String staticResourcePrefix;
 
 	public String executeSetnames() {
@@ -54,28 +55,10 @@ public class TreecopyAction extends ConfluenceActionSupport implements PageAware
 		
 		CopyPage currCopy = createCopyPage(currPage,0);
 		
-		String baseURL = settingsManager.getGlobalSettings().getBaseUrl();
-
 		descendants = new ArrayList<CopyPage>();
 		currCopy.readChildHierarchy(descendants);
 		
-		for (int i=0; i<descendants.size(); i++) {
-			CopyPage cp = descendants.get(i);
-		};
-		
-		spaces = new ArrayList<Space>();
-
-		//System.out.println("FIND Spaces with Permission "+Permission.EDIT+" for User "+AuthenticatedUserThreadLocal.getUser());
-		//SpacesQuery query = SpacesQuery.newQuery().forUser(AuthenticatedUserThreadLocal.getUser()).withPermission("EDIT").build();
-		//List<Space> allspaces = spaceManager.getAllSpaces(query);
-
-		List<Space> allspaces = spaceManager.getSpacesEditableByUser(AuthenticatedUserThreadLocal.getUser());
-
-		Iterator<Space> itr = allspaces.iterator();
-		while (itr.hasNext()) {
-			Space space = itr.next();
-			spaces.add(space);
-		};
+		spaces = getSpacesEditableByUser(AuthenticatedUserThreadLocal.getUser());
 		
 		WebResourceUrlProvider webResourceUrlProvider = (WebResourceUrlProvider)ContainerManager.getComponent("webResourceUrlProvider");
 		staticResourcePrefix = webResourceUrlProvider.getStaticResourcePrefix(UrlMode.ABSOLUTE);
@@ -99,11 +82,22 @@ public class TreecopyAction extends ConfluenceActionSupport implements PageAware
 				
 				CopyPage copypage = currCopy.getCopyPageById(Long.parseLong(value));
 				if (copypage!=null) {
+					// Sprawdzamy czy zalaczniki istnieja na filesystemie.
+					if (!areAttachmentsOk(pageManager.getPage(Long.parseLong(value)))) {
+						String pageTitle = pageManager.getPage(Long.parseLong(value)).getDisplayTitle();
+						this.addActionError("copypagetree.error.missing.attachment", new Object[]{pageTitle} );
+						return executeSetnames();
+					}
+					
 					copypage.setToggle(true);
 					copypage.setNewtitle(r.getParameter("title-"+value));
-					System.out.println("COPY id=" + value+" newtitle="+copypage.getNewtitle());
+					if (LOG.isDebugEnabled()) {
+						LOG.debug("COPY id=" + value+" newtitle="+copypage.getNewtitle());
+					}
 				} else {
-					System.out.println("CANT FIND id=" + value);
+					if (LOG.isDebugEnabled()) {
+						LOG.debug("CANT FIND id=" + value);
+					}
 				}
 				
 			}
@@ -111,18 +105,38 @@ public class TreecopyAction extends ConfluenceActionSupport implements PageAware
 		
 		Space space = spaceManager.getSpace(r.getParameter("targetspace"));
 		Page parentpage = pageManager.getPage(r.getParameter("targetspace"), r.getParameter("parenttitle"));
-		
-		List<Space> allspaces = spaceManager.getSpacesEditableByUser(AuthenticatedUserThreadLocal.getUser());
-		if (allspaces.contains(space)) {
-			System.out.println("SAVE under \""+parentpage.getTitle()+"\" in \""+space.getDisplayTitle()+"\"");
-			currCopy.storeCopyPages(space, pageManager, attachmentManager, labelManager, parentpage);			
+		List<Space> allspaces = getSpacesEditableByUser(AuthenticatedUserThreadLocal.getUser());
+
+		if ( parentpage != null ) {
+			if (allspaces.contains(space)) {
+				if (LOG.isDebugEnabled()) {
+					LOG.debug("SAVE under \""+parentpage.getTitle()+"\" in \""+space.getDisplayTitle()+"\"");
+				}
+				currCopy.storeCopyPages(space, pageManager, attachmentManager, labelManager, parentpage);			
+			} else {
+				if (LOG.isDebugEnabled()) {
+					LOG.debug("NOT SAVED under \""+parentpage.getTitle()+"\" due to insufficient permissions in Space " + space.getKey());
+				}
+			}
 		} else {
-			System.out.println("NOT SAVED under \""+parentpage.getTitle()+"\" due to insufficient permissions in Space " + space.getKey());
+			if (allspaces.contains(space)) {
+				if (LOG.isDebugEnabled()) {
+					LOG.debug("SAVE under Space \""+space.getDisplayTitle()+"\"");
+				}
+				currCopy.storeCopyPages(space, pageManager, attachmentManager, labelManager, null);			
+			} else {
+				if (LOG.isDebugEnabled()) {
+					LOG.debug("NOT SAVED due to insufficient permissions in Space " + space.getKey());
+				}
+			}
 		}
+		
+
 		        
 		return "success";
 	}
-	
+
+
 	private CopyPage createCopyPage(Page org, int depth) {
 		
 		int position = 0;
@@ -139,7 +153,7 @@ public class TreecopyAction extends ConfluenceActionSupport implements PageAware
 		return copypage;
 	}
 	
-	public ArrayList<Space> getSpaces() {
+	public List<Space> getSpaces() {
 		return spaces;
 	}
 
@@ -147,7 +161,7 @@ public class TreecopyAction extends ConfluenceActionSupport implements PageAware
 		return currPage;
 	}
 	
-	public ArrayList<CopyPage> getDescendants() {
+	public List<CopyPage> getDescendants() {
 		return descendants;
 	}
 	
@@ -212,7 +226,74 @@ public class TreecopyAction extends ConfluenceActionSupport implements PageAware
     }
 
     public String getStaticResourcePrefix() {
-    	System.out.println("staticResourcePrefix: "+this.staticResourcePrefix);
+		if (LOG.isDebugEnabled()) {
+			LOG.debug("staticResourcePrefix: "+this.staticResourcePrefix);
+		}
     	return this.staticResourcePrefix;
     }
+    
+    private List<Space> getSpacesEditableByUser(User user){
+		// Szukamy przestrzeni w ktorych user moze tworzyc/edytowac strony.
+		// Beda to potencjalne przestrzenie do ktorych user moze skopiowac page tree.
+		SpacesQuery spacesQuery = SpacesQuery.newQuery()
+				.forUser(user)
+				.withPermission(SpacePermission.CREATEEDIT_PAGE_PERMISSION)
+				.build();
+		ListBuilder<Space> spacesBuilder = spaceManager.getSpaces(spacesQuery);
+		
+		// Wyciagamy cala liste naraz.
+		// Teoretycznie nie powinnismy tego robic, ale chodzi o obiekty Space, ktorych jest stosunkowo malo.
+		return spacesBuilder.getRange(0, spacesBuilder.getAvailableSize() - 1);
+    	
+    }
+    
+	private boolean areAttachmentsOk(Page pageToCheck) {
+		String attachmentDir = AttachmentUtils.getConfluenceAttachmentDirectory();
+		List<Attachment> attachments = pageToCheck.getLatestVersionsOfAttachments();
+		
+		if (attachments != null) {
+			for (Attachment attachment : attachments) {
+				
+				// Tworzymy sciezke do zalacznika wg atlassianowego algorytmu.
+				long attachmentId = attachment.getId();
+				long attachmentContentId = attachment.getContent().getId();
+				long attachmentContentIdLsd1 = attachmentContentId % 250;
+				long attachmentContentIdLsd2 = ((attachmentContentId - (attachmentContentId %1000)) / 1000) % 250;
+				String spaceSubdirs  = "";
+			    if (attachment.getSpace() != null ) {
+					long spaceId = attachment.getSpace().getId();
+					long spaceIdLsd1 = spaceId % 250;
+					long spaceIdLsd2 = ((spaceId - (spaceId %1000)) / 1000) % 250;
+					spaceSubdirs = spaceIdLsd1 + "/" + spaceIdLsd2 + "/" + spaceId;
+			    }
+			    else {
+			    	spaceSubdirs = "nonspaced";
+			    }
+				File expectedName = new File(attachmentDir + 
+											 "/ver003/" + 
+											 spaceSubdirs +
+											 "/" + 
+											 attachmentContentIdLsd1 + 
+											 "/" + 
+											 attachmentContentIdLsd2 + 
+											 "/" + 
+											 attachmentContentId + 
+											 "/" + 
+											 attachmentId + 
+											 "/" + 
+											 attachment.getVersion());
+				
+				
+				if (!expectedName.exists()) 
+				{
+					if (LOG.isDebugEnabled()) {
+						LOG.debug("Attachment " + expectedName.getAbsolutePath() + " does not exist.");
+					}
+					return false;
+				}
+			}
+		}
+		return true;
+	}
+	
 }
