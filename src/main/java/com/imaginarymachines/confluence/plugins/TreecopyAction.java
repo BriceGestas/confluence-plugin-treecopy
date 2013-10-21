@@ -17,6 +17,7 @@ import com.atlassian.confluence.pages.AttachmentManager;
 import com.atlassian.confluence.pages.AttachmentUtils;
 import com.atlassian.confluence.pages.Page;
 import com.atlassian.confluence.pages.PageManager;
+import com.atlassian.confluence.setup.settings.SettingsManager;
 import com.atlassian.confluence.pages.actions.PageAware;
 import com.atlassian.confluence.spaces.SpaceManager;
 import com.atlassian.confluence.spaces.Space;
@@ -43,6 +44,7 @@ public class TreecopyAction extends ConfluenceActionSupport implements PageAware
 	private PageManager pageManager;
 	private AttachmentManager attachmentManager;
 	private LabelManager labelManager;
+	private SettingsManager settingsManager;
 	private AbstractPage page;
 	private Page currPage;
 	private List<CopyPage> descendants;
@@ -248,6 +250,11 @@ public class TreecopyAction extends ConfluenceActionSupport implements PageAware
     }
     
 	private boolean areAttachmentsOk(Page pageToCheck) {
+		
+	
+		//System.out.println("Attachment DataStore: "+settingsManager.getGlobalSettings().getAttachmentDataStore());
+		//System.out.println("Attachment DataStore: "+getGlobalSettings().getAttachmentDataStore());
+
 		String attachmentDir = AttachmentUtils.getConfluenceAttachmentDirectory();
 		List<Attachment> attachments = pageToCheck.getLatestVersionsOfAttachments();
 		
@@ -283,7 +290,7 @@ public class TreecopyAction extends ConfluenceActionSupport implements PageAware
 											 "/" + 
 											 attachment.getVersion());
 				
-				
+				//System.out.println("Copy Attachment. Check for "+expectedName.getAbsolutePath());
 				if (!expectedName.exists()) 
 				{
 					if (LOG.isDebugEnabled()) {

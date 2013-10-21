@@ -74,22 +74,22 @@
     </script>
     
 	<img src="" width="20" height="1">
-	<table style="spacing:3px;background-color:#DDDDDD;width:500px">
+	<table style="spacing:3px;background-color:#DDDDDD;width:550px">
 		<tr>
-			<td><img src="" width="33" height="1"></td>
+			<td><img src="" width="20" height="1"></td>
 			<td style="border-bottom:1px solid black;">$action.getText("copypagetree.prefix")</td>
-			<td><img src="" width="40" height="1"></td>
+			<td><img src="" width="20" height="1"></td>
 			<td style="border-bottom:1px solid black;">$action.getText("copypagetree.replace")</td>
-			<td><img src="" width="40" height="1"></td>
+			<td><img src="" width="20" height="1"></td>
 			<td style="border-bottom:1px solid black;">$action.getText("copypagetree.suffix")</td>
-			<td><img src="" width="40" height="1"></td>
-			<td><img src="" width="40" height="1"></td>
+			<td><img src="" width="20" height="1"></td>
+			<td><img src="" width="20" height="1"></td>
 		</tr>
 		<tr>
 			<td></td>
 			<td><input type="text" id="prefix" style="width:60px"></td>
 			<td></td>
-			<td><input type="text" id="search" style="width:60px"> -&gt; <input type="text" id="replace" style="width:60px"></td>
+			<td><input type="text" id="search" style="width:100px"> -&gt; <input type="text" id="replace" style="width:100px"></td>
 			<td></td>
 			<td><input type="text" id="suffix" style="width:60px"></td>
 			<td></td>
@@ -112,7 +112,7 @@
 	#end
 	<br>
 	<br>
-	<table style="spacing:3px;background-color:#DDDDDD;width:500px">
+	<table style="spacing:3px;background-color:#DDDDDD;width:550px">
 		<tr>
 			<td style="border-bottom:1px solid black;">$action.getText("copypagetree.space")</td>
 			<td style="border-bottom:1px solid black;">$action.getText("copypagetree.parentpage")</td>
