@@ -14,6 +14,8 @@ import com.atlassian.confluence.labels.LabelManager;
 import com.atlassian.confluence.pages.AbstractPage;
 import com.atlassian.confluence.pages.Attachment;
 import com.atlassian.confluence.pages.AttachmentManager;
+import com.atlassian.confluence.security.PermissionManager;
+import com.atlassian.confluence.security.Permission;
 import com.atlassian.confluence.pages.AttachmentUtils;
 import com.atlassian.confluence.pages.Page;
 import com.atlassian.confluence.pages.PageManager;
@@ -43,6 +45,7 @@ public class TreecopyAction extends ConfluenceActionSupport implements PageAware
 	private SpaceManager spaceManager;
 	private PageManager pageManager;
 	private AttachmentManager attachmentManager;
+	private PermissionManager permissionManager;
 	private LabelManager labelManager;
 	private SettingsManager settingsManager;
 	private AbstractPage page;
@@ -56,9 +59,8 @@ public class TreecopyAction extends ConfluenceActionSupport implements PageAware
 		currPage = (Page) this.getWebInterfaceContext().getPage();
 		
 		CopyPage currCopy = createCopyPage(currPage,0);
-		
 		descendants = new ArrayList<CopyPage>();
-		currCopy.readChildHierarchy(descendants);
+		currCopy.readChildHierarchy(descendants, permissionManager, AuthenticatedUserThreadLocal.getUser());
 		
 		spaces = getSpacesEditableByUser(AuthenticatedUserThreadLocal.getUser());
 		
@@ -114,7 +116,7 @@ public class TreecopyAction extends ConfluenceActionSupport implements PageAware
 				if (LOG.isDebugEnabled()) {
 					LOG.debug("SAVE under \""+parentpage.getTitle()+"\" in \""+space.getDisplayTitle()+"\"");
 				}
-				currCopy.storeCopyPages(space, pageManager, attachmentManager, labelManager, parentpage);			
+				currCopy.storeCopyPages(space, pageManager, attachmentManager, labelManager, parentpage, permissionManager, AuthenticatedUserThreadLocal.getUser());			
 			} else {
 				if (LOG.isDebugEnabled()) {
 					LOG.debug("NOT SAVED under \""+parentpage.getTitle()+"\" due to insufficient permissions in Space " + space.getKey());
@@ -125,7 +127,7 @@ public class TreecopyAction extends ConfluenceActionSupport implements PageAware
 				if (LOG.isDebugEnabled()) {
 					LOG.debug("SAVE under Space \""+space.getDisplayTitle()+"\"");
 				}
-				currCopy.storeCopyPages(space, pageManager, attachmentManager, labelManager, null);			
+				currCopy.storeCopyPages(space, pageManager, attachmentManager, labelManager, null, permissionManager, AuthenticatedUserThreadLocal.getUser());			
 			} else {
 				if (LOG.isDebugEnabled()) {
 					LOG.debug("NOT SAVED due to insufficient permissions in Space " + space.getKey());
@@ -144,15 +146,19 @@ public class TreecopyAction extends ConfluenceActionSupport implements PageAware
 		int position = 0;
 		if (org.getPosition()!=null) position = org.getPosition();
 		
-		CopyPage copypage = new CopyPage(org.getId(), position, depth, org.getTitle());
-		
-		if (org.getChildren().size()>0) {
-			for (int i=0; i<org.getChildren().size(); i++) {
-				CopyPage childcopy = createCopyPage((Page)org.getChildren().get(i), depth+1);
-				copypage.addChild(childcopy);
+		if (permissionManager.hasPermission(AuthenticatedUserThreadLocal.getUser(), Permission.VIEW, org)) {
+
+			CopyPage copypage = new CopyPage(org.getId(), position, depth, org.getTitle());
+			
+			if (org.getChildren().size()>0) {
+				for (int i=0; i<org.getChildren().size(); i++) {
+					CopyPage childcopy = createCopyPage((Page)org.getChildren().get(i), depth+1);
+					if (childcopy!=null) copypage.addChild(childcopy);
+				}
 			}
+			return copypage;
 		}
-		return copypage;
+		return null;
 	}
 	
 	public List<Space> getSpaces() {
@@ -225,6 +231,10 @@ public class TreecopyAction extends ConfluenceActionSupport implements PageAware
     
     public void setAttachmentManager(AttachmentManager attachmentManager) {
         this.attachmentManager = attachmentManager;
+    }
+
+    public void setPermissionManager(PermissionManager permissionManager) {
+        this.permissionManager = permissionManager;
     }
 
     public String getStaticResourcePrefix() {

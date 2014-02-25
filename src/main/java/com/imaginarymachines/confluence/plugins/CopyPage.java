@@ -14,6 +14,9 @@ import com.atlassian.confluence.pages.AttachmentManager;
 import com.atlassian.confluence.pages.Page;
 import com.atlassian.confluence.pages.PageManager;
 import com.atlassian.confluence.spaces.Space;
+import com.atlassian.confluence.security.PermissionManager;
+import com.atlassian.confluence.security.Permission;
+import com.atlassian.user.User;
 
 public class CopyPage implements Comparable<CopyPage> {
 	
@@ -42,13 +45,15 @@ public class CopyPage implements Comparable<CopyPage> {
 		this.children.add(childcopy);
 	}
 	
-	public void readChildHierarchy(List<CopyPage> level) {		
+	public void readChildHierarchy(List<CopyPage> level, PermissionManager permissionManager, User user) {
+
 		level.add(this);
 		List<CopyPage> childs = this.getChildren();
 		for (int i=0; i<childs.size(); i++) {
 			CopyPage child = (CopyPage)childs.get(i);
-			child.readChildHierarchy(level);
-		}
+			child.readChildHierarchy(level, permissionManager, user);
+		}			
+
 	}
 
 	private List<CopyPage> getChildren() {
@@ -72,71 +77,73 @@ public class CopyPage implements Comparable<CopyPage> {
 		return null;
 	}
 	
-	public void storeCopyPages(Space space, PageManager pageManager, AttachmentManager attachmentManager, LabelManager labelManager, Page defaultParentPage) {
+	public void storeCopyPages(Space space, PageManager pageManager, AttachmentManager attachmentManager, LabelManager labelManager, Page defaultParentPage, PermissionManager permissionManager, User user) {
 		
-		if (this.toggle) this.storeCopyPage(space, pageManager, attachmentManager, labelManager, defaultParentPage);
+		if (this.toggle) this.storeCopyPage(space, pageManager, attachmentManager, labelManager, defaultParentPage, permissionManager, user);
 		
 		List<CopyPage> childs = this.getChildren();
 		for (int i=0; i<childs.size(); i++) {
 			CopyPage child = (CopyPage)childs.get(i);
-			child.storeCopyPages(space, pageManager, attachmentManager, labelManager, defaultParentPage);
+			child.storeCopyPages(space, pageManager, attachmentManager, labelManager, defaultParentPage, permissionManager, user);
 		}
 		
 	}
 	
-	private void storeCopyPage(Space space, PageManager pageManager, AttachmentManager attachmentManager, LabelManager labelManager, Page defaultParentPage) {
+	private void storeCopyPage(Space space, PageManager pageManager, AttachmentManager attachmentManager, LabelManager labelManager, Page defaultParentPage, PermissionManager permissionManager, User user) {
 		
 		Page oldPage = pageManager.getPage(this.id);
 		
-		Page parentPage = defaultParentPage;
-		
-		if (this.getParent()!=null) {
-			parentPage = pageManager.getPage(this.getParent().getNewid());
-		}
-		
-		final Page newPage = new Page();
-        newPage.setTitle(this.getNewtitle());
-        newPage.setSpace(space);
-        newPage.setBodyAsString(oldPage.getBodyAsString());
-        newPage.setPosition(oldPage.getPosition());
-        pageManager.saveContentEntity(newPage, null);
-        if (parentPage!=null) {
-        	parentPage.addChild(newPage);
-        } else {
-        	if (LOG.isDebugEnabled()) {
-				LOG.debug("No parent page.");
+		if (permissionManager.hasPermission(user, Permission.VIEW, oldPage)) {
+
+			Page parentPage = defaultParentPage;
+			
+			if (this.getParent()!=null) {
+				parentPage = pageManager.getPage(this.getParent().getNewid());
 			}
-        }
-        this.setNewid(newPage.getId());
+			
+			final Page newPage = new Page();
+	        newPage.setTitle(this.getNewtitle());
+	        newPage.setSpace(space);
+	        newPage.setBodyAsString(oldPage.getBodyAsString());
+	        newPage.setPosition(oldPage.getPosition());
+	        pageManager.saveContentEntity(newPage, null);
+	        if (parentPage!=null) {
+	        	parentPage.addChild(newPage);
+	        } else {
+	        	if (LOG.isDebugEnabled()) {
+					LOG.debug("No parent page.");
+				}
+	        }
+	        this.setNewid(newPage.getId());
+	        
+	        List<Attachment> oldAttachments = oldPage.getLatestVersionsOfAttachments();
+	        for (Attachment oldAttachment : oldAttachments) {
+	        	try {
+	            	if (LOG.isDebugEnabled()) {
+	    				LOG.debug("oldAttachment="+oldAttachment.getFileName());
+	    			}
+	        		Attachment newAttachment = new Attachment();
+	        		newAttachment.setContentType(oldAttachment.getContentType());
+	        		newAttachment.setFileName(oldAttachment.getFileName());
+	        		newAttachment.setComment(oldAttachment.getComment());
+	        		newAttachment.setFileSize(oldAttachment.getFileSize());
+		            newPage.addAttachment(newAttachment);
+	        		attachmentManager.saveAttachment(newAttachment, null, oldAttachment.getContentsAsStream());
+	            	if (LOG.isDebugEnabled()) {
+	    				LOG.debug("newAttachment="+newAttachment.getFileName());
+	    			}
+	            } catch (Exception exception) {
+	            	exception.printStackTrace();
+	            }
+	            
+	        }
+	        
+	        List<Label> oldLabels = oldPage.getLabels();
+	        for (Label oldLabel : oldLabels) {
+	        	labelManager.addLabel((Labelable)newPage, oldLabel);
+	        }
         
-        List<Attachment> oldAttachments = oldPage.getLatestVersionsOfAttachments();
-        for (Attachment oldAttachment : oldAttachments) {
-        	try {
-            	if (LOG.isDebugEnabled()) {
-    				LOG.debug("oldAttachment="+oldAttachment.getFileName());
-    			}
-        		Attachment newAttachment = new Attachment();
-        		newAttachment.setContentType(oldAttachment.getContentType());
-        		newAttachment.setFileName(oldAttachment.getFileName());
-        		newAttachment.setComment(oldAttachment.getComment());
-        		newAttachment.setFileSize(oldAttachment.getFileSize());
-	            newPage.addAttachment(newAttachment);
-        		attachmentManager.saveAttachment(newAttachment, null, oldAttachment.getContentsAsStream());
-            	if (LOG.isDebugEnabled()) {
-    				LOG.debug("newAttachment="+newAttachment.getFileName());
-    			}
-            } catch (Exception exception) {
-            	exception.printStackTrace();
-            }
-            
-        }
-        
-        List<Label> oldLabels = oldPage.getLabels();
-        for (Label oldLabel : oldLabels) {
-        	labelManager.addLabel((Labelable)newPage, oldLabel);
-        }
-        
-        
+		}        
         
 	}
 	
