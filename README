@@ -4,7 +4,7 @@ Atlassian Confluence Plugin that adds a page action to copy not only the current
 
 To install this plugin, go to https://marketplace.atlassian.com/plugins/com.nurago.confluence.plugins.treecopy
 
-RELEASE 0.35.0
+RELEASE 0.35.1
 
 Bugfixes:
 * Fix: only pages are copied that the authenticated user has the permission to VIEW
